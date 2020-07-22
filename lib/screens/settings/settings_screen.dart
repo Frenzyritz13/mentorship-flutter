@@ -8,6 +8,7 @@ import 'package:mentorship_client/remote/repositories/user_repository.dart';
 import 'package:mentorship_client/remote/requests/change_password.dart';
 import 'package:mentorship_client/remote/responses/custom_response.dart';
 import 'package:mentorship_client/screens/settings/about.dart';
+import 'package:mentorship_client/widgets/loading_indicator.dart';
 
 class SettingsScreen extends StatelessWidget {
   @override
@@ -32,11 +33,7 @@ class SettingsScreen extends StatelessWidget {
             ListTile(
               leading: Icon(Icons.exit_to_app),
               title: Text("Log out"),
-              onTap: () {
-                BlocProvider.of<AuthBloc>(context).add(JustLoggedOut());
-
-                Navigator.of(context).pop();
-              },
+              onTap: () => _showConfirmLogoutDialog(context),
             ),
             ListTile(
               leading: Icon(Icons.lock_outline),
@@ -56,12 +53,38 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _showChangePasswordDialog(BuildContext theContext) async {
+  void _showConfirmLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Log Out'),
+          content: Text('Are you sure you want to logout?'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            FlatButton(
+              child: Text('Confirm'),
+              onPressed: () {
+                BlocProvider.of<AuthBloc>(context).add(JustLoggedOut());
+
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showChangePasswordDialog(BuildContext topContext) async {
     final _currentPassController = TextEditingController();
     final _newPassController = TextEditingController();
-
     showDialog(
-      context: theContext,
+      context: topContext,
       builder: (context) => AlertDialog(
         title: Text("Change password"),
         content: Column(
@@ -79,21 +102,26 @@ class SettingsScreen extends StatelessWidget {
         ),
         actions: [
           FlatButton(
+            child: Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          FlatButton(
             child: Text("Submit"),
             onPressed: () async {
               ChangePassword changePassword = ChangePassword(
                 currentPassword: _currentPassController.text,
                 newPassword: _newPassController.text,
               );
+              Navigator.of(context).pop();
+              showProgressIndicator(context);
               try {
                 CustomResponse response =
                     await UserRepository.instance.changePassword(changePassword);
-                theContext.showSnackBar(response.message);
+                topContext.showSnackBar(response.message);
               } on Failure catch (failure) {
-                theContext.showSnackBar(failure.message);
+                topContext.showSnackBar(failure.message);
               }
-
-              Navigator.of(context).pop();
+              Navigator.of(topContext).pop();
             },
           ),
         ],
